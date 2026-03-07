@@ -154,8 +154,10 @@ impl FiiODevice {
             None => return,
         };
         let mut buf = [0u8; 65];
+        // Use longer timeout to catch in-flight responses from SET commands
+        let timeout = Duration::from_millis(100);
         loop {
-            match handle.read_interrupt(EP_IN, &mut buf, Duration::from_millis(5)) {
+            match handle.read_interrupt(EP_IN, &mut buf, timeout) {
                 Ok(len) => {
                     log::debug!("USB DRAIN: {} bytes: {:02X?}", len, &buf[..len.min(16)]);
                 }
@@ -294,8 +296,14 @@ impl FiiODevice {
     }
 
     pub fn save_eq(&self, preset: u8) -> Result<(), String> {
+        // Drain any pending SET responses before save
+        self.drain_stale();
         // Save uses sendReportAndListen in Chrome (expects response)
-        self.send_and_receive(&set_eq_save(preset))?;
+        self.usb_write(&set_eq_save(preset))?;
+        // Wait for device to persist
+        std::thread::sleep(Duration::from_millis(200));
+        // Drain save response
+        self.drain_stale();
         Ok(())
     }
 
