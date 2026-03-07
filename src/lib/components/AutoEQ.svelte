@@ -81,8 +81,18 @@
       // Save to device
       await api.saveEq(savePreset);
 
-      // Refresh bands from device
-      eq.bands = await api.getAllEqBands();
+      // Update local state from profile (can't read back from device on Linux)
+      const newBands: import('$lib/api').EqBand[] = [];
+      for (let i = 0; i < 10; i++) {
+        if (i < profile.filters.length) {
+          const f = profile.filters[i];
+          const filterType = f.filter_type === 'LSC' ? 1 : f.filter_type === 'HSC' ? 2 : 0;
+          newBands.push({ index: i, frequency: Math.round(f.frequency), gain: f.gain, q_value: f.q, filter_type: filterType });
+        } else {
+          newBands.push({ index: i, frequency: 1000, gain: 0, q_value: 1, filter_type: 0 });
+        }
+      }
+      eq.bands = newBands;
     } catch (e) {
       console.error('Failed to apply profile:', e);
     } finally {

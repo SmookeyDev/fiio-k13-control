@@ -39,8 +39,12 @@
   async function handleReset() {
     try {
       await api.resetEq();
-      eq.bands = await api.getAllEqBands();
-      eq.globalGain = await api.getEqGlobalGain().catch(() => 0);
+      // Reset local state (can't read back from device)
+      const defaultFreqs = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+      eq.bands = defaultFreqs.map((freq, i) => ({
+        index: i, gain: 0, frequency: freq, q_value: 1.41, filter_type: 0,
+      }));
+      eq.globalGain = 0;
     } catch (e) { console.error(e); }
   }
 
@@ -106,10 +110,6 @@
       <Dropdown options={EQ_PRESETS} bind:value={eq.preset} onchange={async (val) => {
         try {
           await api.setEqPreset(val);
-          if (val !== 240) {
-            eq.bands = await api.getAllEqBands();
-            eq.globalGain = await api.getEqGlobalGain().catch(() => 0);
-          }
         } catch (e) { console.error(e); }
       }} width="140px" />
     </div>

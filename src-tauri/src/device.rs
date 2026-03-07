@@ -97,14 +97,14 @@ impl FiiODevice {
         Ok(10)
     }
 
-    pub fn get_eq_band(&self, _index: u8) -> Result<EqBand, String> {
-        // Cannot read from device on Linux — return default
-        Err("Cannot read EQ bands on Linux (device limitation)".to_string())
+    pub fn get_eq_band(&self, index: u8) -> Result<EqBand, String> {
+        // Cannot read from device on Linux — return default band
+        Ok(EqBand::default_for_index(index))
     }
 
     pub fn get_all_eq_bands(&self) -> Result<Vec<EqBand>, String> {
-        // Return empty — frontend handles defaults
-        Err("Cannot read EQ bands on Linux (device limitation)".to_string())
+        // Cannot read from device on Linux — return 10 default bands
+        Ok((0..10).map(EqBand::default_for_index).collect())
     }
 
     pub fn set_eq_band(
@@ -119,8 +119,7 @@ impl FiiODevice {
     }
 
     pub fn get_eq_preset(&self) -> Result<u8, String> {
-        // Cannot read — return default (USER 1)
-        Ok(160)
+        Ok(160) // Cannot read — default USER 1
     }
 
     pub fn set_eq_preset(&self, preset: u8) -> Result<(), String> {
@@ -229,6 +228,20 @@ pub struct EqBand {
     pub frequency: u16,
     pub q_value: f64,
     pub filter_type: u8,
+}
+
+impl EqBand {
+    /// Default bands matching K13 R2R factory defaults
+    pub fn default_for_index(index: u8) -> Self {
+        const DEFAULT_FREQS: [u16; 10] = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+        Self {
+            index,
+            gain: 0.0,
+            frequency: DEFAULT_FREQS.get(index as usize).copied().unwrap_or(1000),
+            q_value: 1.41,
+            filter_type: 0, // Peak
+        }
+    }
 }
 
 pub type SharedDevice = Arc<Mutex<FiiODevice>>;
