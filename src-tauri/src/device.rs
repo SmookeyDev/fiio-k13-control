@@ -128,13 +128,13 @@ impl FiiODevice {
         Ok(())
     }
 
-    /// Read response via interrupt IN (exactly like Chrome onInputReportOnce)
-    fn usb_read(&self) -> Result<Vec<u8>, String> {
+    /// Read one response from interrupt IN, stripping report ID
+    fn usb_read_raw(&self, timeout: Duration) -> Result<Vec<u8>, String> {
         let handle = self.handle.as_ref().ok_or("Device not connected")?;
 
-        let mut buf = [0u8; 65]; // report ID + 64 bytes
+        let mut buf = [0u8; 65];
         let len = handle
-            .read_interrupt(EP_IN, &mut buf, TIMEOUT_READ)
+            .read_interrupt(EP_IN, &mut buf, timeout)
             .map_err(|e| format!("USB read failed: {}", e))?;
 
         log::debug!("USB RX [EP {:02X}]: {} bytes: {:02X?}", EP_IN, len, &buf[..len.min(16)]);
@@ -147,17 +147,62 @@ impl FiiODevice {
         }
     }
 
-    /// Send command and read response (like Chrome sendReportAndListen)
+    /// Drain any stale responses sitting in the IN buffer
+    fn drain_stale(&self) {
+        let handle = match self.handle.as_ref() {
+            Some(h) => h,
+            None => return,
+        };
+        let mut buf = [0u8; 65];
+        loop {
+            match handle.read_interrupt(EP_IN, &mut buf, Duration::from_millis(5)) {
+                Ok(len) => {
+                    log::debug!("USB DRAIN: {} bytes: {:02X?}", len, &buf[..len.min(16)]);
+                }
+                Err(_) => break, // Timeout = buffer empty
+            }
+        }
+    }
+
+    /// Send command and read matching response (like Chrome sendReportAndListen)
+    /// Matches response CMD byte to request CMD byte, retries on mismatch
     fn send_and_receive(&self, packet: &[u8]) -> Result<Vec<u8>, String> {
+        self.drain_stale();
         self.usb_write(packet)?;
-        self.usb_read()
+
+        let expected_cmd = if packet.len() > 4 { packet[4] } else { 0 };
+
+        // Try up to 3 reads to find matching response
+        for attempt in 0..3 {
+            match self.usb_read_raw(TIMEOUT_READ) {
+                Ok(resp) => {
+                    if resp.len() > 4 && resp[0] == 0xBB && resp[4] == expected_cmd {
+                        return Ok(resp);
+                    }
+                    // Response for different command — stale, try again
+                    log::debug!(
+                        "Response CMD {:02X} doesn't match expected {:02X} (attempt {})",
+                        resp.get(4).unwrap_or(&0), expected_cmd, attempt + 1
+                    );
+                }
+                Err(e) => {
+                    if e.contains("Timeout") {
+                        log::debug!("Read timeout for CMD {:02X} (attempt {})", expected_cmd, attempt + 1);
+                        return Err(format!("Timeout reading response for CMD {:02X}", expected_cmd));
+                    }
+                    return Err(e);
+                }
+            }
+        }
+
+        Err(format!("No matching response for CMD {:02X} after 3 attempts", expected_cmd))
     }
 
     /// Send command without waiting for response (like Chrome sendReport for SET ops)
     fn send_only(&self, packet: &[u8]) -> Result<(), String> {
         self.usb_write(packet)?;
-        // Small delay for device to process
-        std::thread::sleep(Duration::from_millis(30));
+        // Wait for device to process before sending next command
+        std::thread::sleep(Duration::from_millis(50));
         Ok(())
     }
 
