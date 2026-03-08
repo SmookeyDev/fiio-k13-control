@@ -3,7 +3,7 @@ name = "fiio-k13-control"
 version = "0.1.0"
 description = "Desktop controller for FiiO K13 R2R DAC/AMP"
 authors = ["smookeydev"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "fiio_k13_control_lib"

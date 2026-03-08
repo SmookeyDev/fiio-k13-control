@@ -13,11 +13,14 @@ pub fn run() {
         .init();
 
     // Fix WebKitGTK crash on Wayland (Fedora/GNOME)
-    if std::env::var("GDK_BACKEND").is_err() {
-        std::env::set_var("GDK_BACKEND", "x11");
-    }
-    if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
-        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+    // SAFETY: called before any threads are spawned
+    unsafe {
+        if std::env::var("GDK_BACKEND").is_err() {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
+        if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
+            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        }
     }
 
     tauri::Builder::default()
