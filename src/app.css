@@ -47,6 +47,7 @@ html, body {
   background: var(--bg-0);
   color: var(--text-0);
   color-scheme: dark;
+  width: 100%;
   height: 100%;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
@@ -54,6 +55,11 @@ html, body {
   font-size: 13px;
   line-height: 1.5;
   user-select: none;
+}
+
+body > div {
+  width: 100%;
+  height: 100%;
 }
 
 ::-webkit-scrollbar { width: 5px; }

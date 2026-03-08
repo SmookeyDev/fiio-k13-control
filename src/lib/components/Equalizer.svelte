@@ -76,7 +76,7 @@
     onBandChange(index);
   }
 
-  const GW = 860, GH = 180;
+  const GW = 800, GH = 200;
   const freqMarks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   const dbMarks = [-12, -6, 0, 6, 12];
 </script>
@@ -124,7 +124,17 @@
 
   <!-- Graph -->
   <div class="graph-wrap">
-    <svg viewBox="0 0 {GW} {GH}" preserveAspectRatio="none" class="graph-svg">
+    <svg viewBox="0 0 {GW} {GH}" preserveAspectRatio="xMidYMid meet" class="graph-svg">
+      <defs>
+        <clipPath id="graphClip">
+          <rect x="0" y="0" width={GW} height={GH} />
+        </clipPath>
+        <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <g clip-path="url(#graphClip)">
       {#each dbMarks as db}
         {@const y = GH / 2 - (db / 15) * (GH / 2)}
         <line x1="0" y1={y} x2={GW} y2={y} class="g-line" class:g-zero={db === 0} />
@@ -135,12 +145,6 @@
         <line x1={x} y1="0" x2={x} y2={GH} class="g-line g-vert" />
         <text x={x} y={GH - 4} class="g-freq">{freqLabel(f)}</text>
       {/each}
-      <defs>
-        <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.2"/>
-          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
       <path d={fillPath(GW, GH)} fill="url(#fillGrad)" />
       <path d={computeResponsePath(GW, GH)} class="curve" />
       {#each eq.bands as band, i}
@@ -156,6 +160,7 @@
           <text x={bx} y={by - 12} class="dot-label">{i + 1}</text>
         {/if}
       {/each}
+      </g>
     </svg>
   </div>
 
@@ -206,7 +211,7 @@
     <div class="detail-bar">
       <span class="detail-title">Band {idx + 1}</span>
       <div class="detail-param">
-        <label>Frequency</label>
+        <label>Freq</label>
         <input type="range" min="20" max="20000" step="1" bind:value={band.frequency} oninput={() => onBandChange(idx)} />
         <span class="detail-val">{freqLabel(band.frequency)} Hz</span>
       </div>
@@ -229,12 +234,20 @@
 </div>
 
 <style>
-  .eq-page { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+  .eq-page {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
 
   .eq-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
   }
 
   .toolbar-left { display: flex; align-items: center; gap: 14px; }
@@ -312,6 +325,7 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-l);
+    flex-shrink: 0;
   }
 
   .ctrl-group { display: flex; align-items: center; gap: 10px; }
@@ -336,11 +350,15 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-l);
-    padding: 10px 16px 6px;
+    padding: 8px 14px 4px;
     flex-shrink: 0;
+    overflow: hidden;
   }
 
-  .graph-svg { width: 100%; height: 180px; }
+  .graph-svg {
+    width: 100%;
+    display: block;
+  }
 
   .g-line { stroke: var(--border-default); stroke-width: 0.5; }
   .g-line.g-zero { stroke: var(--border-strong); stroke-width: 0.8; }
@@ -386,20 +404,25 @@
   .bands-grid {
     display: flex;
     gap: 4px;
+    min-width: 0;
+    flex: 1;
+    min-height: 0;
   }
 
   .band-col {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    padding: 10px 4px 8px;
+    padding: 8px 4px 6px;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-m);
     cursor: pointer;
     transition: all 0.12s var(--ease);
+    overflow: hidden;
   }
 
   .band-col:hover { border-color: var(--border-strong); }
@@ -421,6 +444,7 @@
     justify-content: center;
     border-radius: 50%;
     background: var(--bg-3);
+    flex-shrink: 0;
   }
 
   .band-selected .band-num {
@@ -433,7 +457,8 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    height: 110px;
+    flex: 1;
+    min-height: 0;
   }
 
   .v-slider {
@@ -442,7 +467,8 @@
     -webkit-appearance: slider-vertical;
     appearance: slider-vertical;
     width: 20px;
-    height: 90px;
+    flex: 1;
+    min-height: 60px;
   }
 
   .band-gain-label {
@@ -450,6 +476,7 @@
     font-family: var(--mono);
     font-weight: 500;
     color: var(--text-2);
+    flex-shrink: 0;
   }
 
   .band-inputs {
@@ -458,6 +485,7 @@
     gap: 3px;
     width: 100%;
     padding: 0 2px;
+    flex-shrink: 0;
   }
 
   .band-field {
@@ -492,7 +520,6 @@
     outline: none;
   }
 
-  /* Hide number spinners */
   .band-field input[type="number"]::-webkit-inner-spin-button,
   .band-field input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -512,6 +539,7 @@
     border-radius: var(--radius-s);
     transition: all 0.1s var(--ease);
     letter-spacing: 0.3px;
+    flex-shrink: 0;
   }
 
   .filter-btn:hover {
@@ -523,11 +551,12 @@
   .detail-bar {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 10px 16px;
+    gap: 14px;
+    padding: 8px 16px;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-l);
+    flex-shrink: 0;
   }
 
   .detail-title {
@@ -543,6 +572,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   .detail-param label {
@@ -551,20 +581,22 @@
     color: var(--text-3);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    min-width: 30px;
+    min-width: 28px;
+    flex-shrink: 0;
   }
 
   .detail-param input[type="range"] {
     flex: 1;
-    min-width: 60px;
+    min-width: 50px;
   }
 
   .detail-val {
     font-family: var(--mono);
     font-size: 11px;
     color: var(--text-1);
-    min-width: 55px;
+    min-width: 50px;
     text-align: right;
+    flex-shrink: 0;
   }
 
   .detail-type {

@@ -8,16 +8,6 @@ export interface EqBand {
   filter_type: number;
 }
 
-export const FilterType = {
-  PEAK: 0,
-  LOW_SHELF: 1,
-  HIGH_SHELF: 2,
-  BAND_PASS: 3,
-  LOW_PASS: 4,
-  HIGH_PASS: 5,
-  ALL_PASS: 6,
-} as const;
-
 export const FilterTypeLabels: Record<number, string> = {
   0: 'Peak',
   1: 'Low Shelf',
@@ -73,22 +63,7 @@ export const setEqSwitch = (enabled: boolean) => invoke<void>('set_eq_switch', {
 export const saveEq = (preset: number) => invoke<void>('save_eq', { preset });
 export const resetEq = () => invoke<void>('reset_eq');
 
-// Config
-export const getFirmwareVersion = () => invoke<string>('get_firmware_version');
-export const getVolMax = () => invoke<number>('get_vol_max');
-export const setVolMax = (val: number) => invoke<void>('set_vol_max', { val });
-export const getVolOutput = () => invoke<number>('get_vol_output');
-export const setVolOutput = (val: number) => invoke<void>('set_vol_output', { val });
-export const getVolOutputSwitch = () => invoke<number>('get_vol_output_switch');
-export const setVolOutputSwitch = (val: number) => invoke<void>('set_vol_output_switch', { val });
-export const getMicSwitch = () => invoke<number>('get_mic_switch');
-export const setMicSwitch = (val: number) => invoke<void>('set_mic_switch', { val });
-export const getMicMonitorVol = () => invoke<number>('get_mic_monitor_vol');
-export const setMicMonitorVol = (val: number) => invoke<void>('set_mic_monitor_vol', { val });
-export const getScreenOrientation = () => invoke<number>('get_screen_orientation');
-export const setScreenOrientation = (val: number) => invoke<void>('set_screen_orientation', { val });
-export const getChannelBalance = () => invoke<number>('get_channel_balance');
-export const setChannelBalance = (val: number) => invoke<void>('set_channel_balance', { val });
+// Preset names
 export const getPresetName = (index: number) => invoke<string>('get_preset_name', { index });
 export const setPresetName = (index: number, name: string) => invoke<void>('set_preset_name', { index, name });
 

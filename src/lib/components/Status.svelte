@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, config, eq } from '$lib/store.svelte';
+  import { app, eq } from '$lib/store.svelte';
   import { EQ_PRESETS } from '$lib/api';
 
   const presetLabel = $derived(EQ_PRESETS.find(p => p.value === eq.preset)?.label || '—');
@@ -21,10 +21,6 @@
       <div class="st-row">
         <span class="st-key">Device</span>
         <span class="st-val">{app.deviceName || '—'}</span>
-      </div>
-      <div class="st-row">
-        <span class="st-key">Firmware</span>
-        <span class="st-val mono">{config.firmwareVersion || '—'}</span>
       </div>
       <div class="st-row">
         <span class="st-key">Protocol</span>
@@ -57,31 +53,6 @@
 
     <section class="st-card">
       <div class="card-head">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        <h3>Output</h3>
-      </div>
-      <div class="st-row">
-        <span class="st-key">Max Volume</span>
-        <span class="st-val mono">{config.volMax}</span>
-      </div>
-      <div class="st-row">
-        <span class="st-key">Current Volume</span>
-        <span class="st-val mono">{config.volOutput}</span>
-      </div>
-      <div class="st-row">
-        <span class="st-key">Output Mode</span>
-        <span class="st-val">{config.volOutputSwitch === 1 ? 'Fixed' : 'Variable'}</span>
-      </div>
-      <div class="st-row">
-        <span class="st-key">Balance</span>
-        <span class="st-val mono">
-          {#if config.channelBalance < 0}L{Math.abs(config.channelBalance)}{:else if config.channelBalance > 0}R{config.channelBalance}{:else}0{/if}
-        </span>
-      </div>
-    </section>
-
-    <section class="st-card">
-      <div class="card-head">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <h3>Hardware</h3>
       </div>
@@ -89,19 +60,11 @@
         <span class="st-key">DAC</span>
         <span class="st-val">24-bit R2R (192 resistors)</span>
       </div>
-      <div class="st-row">
-        <span class="st-key">Microphone</span>
-        <span class="st-val">{config.micSwitch === 1 ? 'Enabled' : 'Disabled'}</span>
-      </div>
-      <div class="st-row">
-        <span class="st-key">Display</span>
-        <span class="st-val">{config.screenOrientation === 0 ? 'Normal' : 'Rotated'}</span>
-      </div>
     </section>
   </div>
 
   <div class="st-footer">
-    Protocol reverse-engineered from fiiocontrol.fiio.com &middot; Built with Tauri + Svelte
+    Protocol reverse-engineered from fiiocontrol.fiio.com &middot; <a href="https://github.com/SmookeyDev/fiio-k13-control" target="_blank" rel="noopener noreferrer" class="footer-link">Open Source on GitHub</a>
   </div>
 </div>
 
@@ -164,5 +127,16 @@
     font-size: 11px;
     color: var(--text-3);
     padding: 8px 0;
+  }
+
+  .st-footer :global(.footer-link) {
+    color: var(--accent-strong);
+    text-decoration: none;
+    transition: opacity 0.15s var(--ease);
+  }
+
+  .st-footer :global(.footer-link:hover) {
+    text-decoration: underline;
+    opacity: 0.85;
   }
 </style>

@@ -83,7 +83,7 @@
 
       // Read back actual state from device
       eq.bands = await api.getAllEqBands();
-      eq.globalGain = await api.getEqGlobalGain().catch(() => profile.preamp);
+      eq.globalGain = await api.getEqGlobalGain().catch(() => profile!.preamp);
     } catch (e) {
       console.error('Failed to apply profile:', e);
     } finally {

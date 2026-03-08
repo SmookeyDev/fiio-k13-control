@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "FiiO K13 R2R Control",
-        "width": 1100,
-        "height": 750,
-        "minWidth": 900,
-        "minHeight": 600,
+        "width": 1300,
+        "height": 860,
+        "minWidth": 1100,
+        "minHeight": 700,
         "decorations": true,
         "resizable": true
       }

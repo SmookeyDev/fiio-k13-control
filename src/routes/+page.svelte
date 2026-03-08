@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { app, eq, config } from '$lib/store.svelte';
+  import { app, eq } from '$lib/store.svelte';
   import * as api from '$lib/api';
   import Equalizer from '$lib/components/Equalizer.svelte';
-  import Config from '$lib/components/Config.svelte';
   import Status from '$lib/components/Status.svelte';
   import AutoEQ from '$lib/components/AutoEQ.svelte';
 
@@ -29,39 +28,19 @@
 
   async function loadDeviceState() {
     try {
-      const [eqEnabled, eqCount, eqPreset, globalGain, fwVersion] = await Promise.all([
+      const [eqEnabled, eqCount, eqPreset, globalGain] = await Promise.all([
         api.getEqSwitch().catch(() => true),
         api.getEqCount().catch(() => 10),
         api.getEqPreset().catch(() => 240),
         api.getEqGlobalGain().catch(() => 0),
-        api.getFirmwareVersion().catch(() => 'Unknown'),
       ]);
       eq.enabled = eqEnabled;
       eq.count = eqCount;
       eq.preset = eqPreset;
       eq.globalGain = globalGain;
-      config.firmwareVersion = fwVersion;
 
       const bands = await api.getAllEqBands().catch(() => []);
       eq.bands = bands;
-
-      const [volMax, volOutput, volOutputSwitch, micSwitch, micMonitorVol, screenOri, balance] =
-        await Promise.all([
-          api.getVolMax().catch(() => 120),
-          api.getVolOutput().catch(() => 0),
-          api.getVolOutputSwitch().catch(() => 0),
-          api.getMicSwitch().catch(() => 0),
-          api.getMicMonitorVol().catch(() => 0),
-          api.getScreenOrientation().catch(() => 0),
-          api.getChannelBalance().catch(() => 0),
-        ]);
-      config.volMax = volMax;
-      config.volOutput = volOutput;
-      config.volOutputSwitch = volOutputSwitch;
-      config.micSwitch = micSwitch;
-      config.micMonitorVol = micMonitorVol;
-      config.screenOrientation = screenOri;
-      config.channelBalance = balance;
     } catch (e) {
       console.error('Failed to load device state:', e);
     }
@@ -102,17 +81,6 @@
           <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
         </svg>
         Auto EQ
-      </button>
-      <button
-        class="nav-link"
-        class:active={app.currentPage === 'config'}
-        onclick={() => (app.currentPage = 'config')}
-        disabled={!app.connected}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Configuration
       </button>
       <button
         class="nav-link"
@@ -200,8 +168,6 @@
       <Equalizer />
     {:else if app.currentPage === 'autoeq'}
       <AutoEQ />
-    {:else if app.currentPage === 'config'}
-      <Config />
     {:else}
       <Status />
     {/if}
@@ -211,16 +177,21 @@
 <style>
   .shell {
     display: flex;
+    flex-direction: row;
     height: 100vh;
+    width: 100vw;
+    overflow: hidden;
     background: var(--bg-0);
   }
 
   /* Sidebar */
   .sidebar {
     width: 220px;
+    min-width: 220px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    height: 100vh;
     background: var(--bg-1);
     border-right: 1px solid var(--border-subtle);
   }
@@ -231,7 +202,7 @@
 
   .brand {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 5px;
     margin-bottom: 2px;
   }
@@ -413,8 +384,11 @@
   .main {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 28px;
+    overflow-x: hidden;
+    padding: 20px 24px;
     position: relative;
+    min-width: 0;
+    height: 100vh;
   }
 
   .toast-error {
