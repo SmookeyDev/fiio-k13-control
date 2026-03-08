@@ -1,6 +1,7 @@
 mod autoeq;
 mod commands;
 mod device;
+mod error;
 mod protocol;
 
 use device::create_shared_device;
@@ -12,21 +13,23 @@ pub fn run() {
         .init();
 
     // Fix WebKitGTK crash on Wayland (Fedora/GNOME)
-    // Falls back to X11 via XWayland which is stable
     if std::env::var("GDK_BACKEND").is_err() {
         std::env::set_var("GDK_BACKEND", "x11");
     }
     if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
         std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(create_shared_device())
         .invoke_handler(tauri::generate_handler![
+            // Connection
             commands::connect_device,
             commands::disconnect_device,
             commands::is_connected,
             commands::get_device_name,
+            // EQ
             commands::get_eq_count,
             commands::get_eq_band,
             commands::get_all_eq_bands,
@@ -39,23 +42,10 @@ pub fn run() {
             commands::set_eq_switch,
             commands::save_eq,
             commands::reset_eq,
-            commands::get_firmware_version,
-            commands::get_vol_max,
-            commands::set_vol_max,
-            commands::get_vol_output,
-            commands::set_vol_output,
-            commands::get_vol_output_switch,
-            commands::set_vol_output_switch,
-            commands::get_mic_switch,
-            commands::set_mic_switch,
-            commands::get_mic_monitor_vol,
-            commands::set_mic_monitor_vol,
-            commands::get_screen_orientation,
-            commands::set_screen_orientation,
-            commands::get_channel_balance,
-            commands::set_channel_balance,
+            // Preset names
             commands::get_preset_name,
             commands::set_preset_name,
+            // AutoEQ
             commands::fetch_autoeq_index,
             commands::fetch_autoeq_profile,
         ])
