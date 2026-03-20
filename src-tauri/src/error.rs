@@ -13,6 +13,9 @@ pub enum AppError {
     #[error("USB: {0}")]
     Usb(#[from] rusb::Error),
 
+    #[error("BLE: {0}")]
+    Ble(String),
+
     #[error("Network: {0}")]
     Network(#[from] reqwest::Error),
 
