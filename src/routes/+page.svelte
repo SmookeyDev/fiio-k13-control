@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { app, eq } from '$lib/store.svelte';
+  import { app, eq, ble, showError } from '$lib/store.svelte';
   import * as api from '$lib/api';
   import Equalizer from '$lib/components/Equalizer.svelte';
   import Status from '$lib/components/Status.svelte';
   import AutoEQ from '$lib/components/AutoEQ.svelte';
+  import DeviceSettings from '$lib/components/DeviceSettings.svelte';
 
   async function handleConnect() {
     if (app.connected) {
@@ -20,9 +21,33 @@
       app.deviceName = name;
       await loadDeviceState();
     } catch (e: any) {
-      app.error = e?.toString() || 'Connection failed';
+      showError('USB connect', e);
     } finally {
       app.loading = false;
+    }
+  }
+
+  async function handleBleConnect() {
+    if (app.bleConnected) {
+      await api.bleDisconnect();
+      app.bleConnected = false;
+      app.bleDeviceName = '';
+      if (app.currentPage === 'settings') {
+        app.currentPage = 'equalizer';
+      }
+      return;
+    }
+    app.bleLoading = true;
+    app.error = null;
+    try {
+      const name = await api.bleConnect();
+      app.bleConnected = true;
+      app.bleDeviceName = name;
+      await loadBleState();
+    } catch (e: any) {
+      showError('BLE connect', e);
+    } finally {
+      app.bleLoading = false;
     }
   }
 
@@ -42,7 +67,34 @@
       const bands = await api.getAllEqBands().catch(() => []);
       eq.bands = bands;
     } catch (e) {
-      console.error('Failed to load device state:', e);
+      showError('Load USB state', e);
+    }
+  }
+
+  async function loadBleState() {
+    try {
+      // Load lights + input (fast, essential)
+      const [inputSource, topOn, topMode, topColor, knobOn, knobMode, knobColor] = await Promise.all([
+        api.bleGetInputSource().catch(() => 0x01),
+        api.bleGetLightSwitch(api.ZONE_TOP).catch(() => true),
+        api.bleGetLightMode(api.ZONE_TOP).catch(() => 0),
+        api.bleGetLightColor(api.ZONE_TOP).catch(() => 0),
+        api.bleGetLightSwitch(api.ZONE_KNOB).catch(() => true),
+        api.bleGetLightMode(api.ZONE_KNOB).catch(() => 0),
+        api.bleGetLightColor(api.ZONE_KNOB).catch(() => 0),
+      ]);
+      ble.inputSource = inputSource;
+      ble.topLightOn = topOn;
+      ble.topLightMode = topMode;
+      ble.topLightColor = topColor;
+      ble.knobLightOn = knobOn;
+      ble.knobLightMode = knobMode;
+      ble.knobLightColor = knobColor;
+
+      // Load device info
+      ble.firmwareVersion = await api.bleGetFirmwareVersion().catch(() => '');
+    } catch (e) {
+      showError('Load BLE state', e);
     }
   }
 </script>
@@ -82,6 +134,18 @@
         </svg>
         Auto EQ
       </button>
+      {#if app.bleConnected}
+        <button
+          class="nav-link"
+          class:active={app.currentPage === 'settings'}
+          onclick={() => (app.currentPage = 'settings')}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Settings
+        </button>
+      {/if}
       <button
         class="nav-link"
         class:active={app.currentPage === 'status'}
@@ -99,9 +163,18 @@
         <div class="device-info">
           <div class="device-status">
             <span class="pulse"></span>
-            <span class="device-label">Connected</span>
+            <span class="device-label">USB</span>
           </div>
           <span class="device-name">{app.deviceName}</span>
+        </div>
+      {/if}
+      {#if app.bleConnected}
+        <div class="device-info">
+          <div class="device-status">
+            <span class="pulse ble"></span>
+            <span class="device-label ble">BLE</span>
+          </div>
+          <span class="device-name">{app.bleDeviceName}</span>
         </div>
       {/if}
       <button
@@ -113,9 +186,23 @@
         {#if app.loading}
           <span class="spinner"></span> Scanning...
         {:else if app.connected}
-          Disconnect
+          Disconnect USB
         {:else}
           Connect USB
+        {/if}
+      </button>
+      <button
+        class="sidebar-connect ble-btn"
+        class:connected={app.bleConnected}
+        onclick={handleBleConnect}
+        disabled={app.bleLoading}
+      >
+        {#if app.bleLoading}
+          <span class="spinner"></span> Scanning BLE...
+        {:else if app.bleConnected}
+          Disconnect BLE
+        {:else}
+          Connect BLE
         {/if}
       </button>
     </div>
@@ -168,6 +255,8 @@
       <Equalizer />
     {:else if app.currentPage === 'autoeq'}
       <AutoEQ />
+    {:else if app.currentPage === 'settings' && app.bleConnected}
+      <DeviceSettings />
     {:else}
       <Status />
     {/if}
@@ -365,6 +454,37 @@
   .sidebar-connect:disabled {
     opacity: 0.6;
     cursor: wait;
+  }
+
+  .ble-btn {
+    background: var(--bg-3);
+    color: var(--text-2);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .ble-btn:hover:not(:disabled):not(.connected) {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .ble-btn.connected {
+    background: var(--bg-3);
+    color: var(--text-2);
+  }
+
+  .ble-btn.connected:hover {
+    color: var(--rose);
+    background: var(--rose-dim);
+  }
+
+  .pulse.ble {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  .device-label.ble {
+    color: var(--accent);
   }
 
   .spinner {
