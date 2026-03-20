@@ -23,3 +23,7 @@ log = "0.4"
 env_logger = "0.11"
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"], default-features = false }
 thiserror = "2"
+btleplug = "0.11"
+tokio = { version = "1", features = ["sync", "time"] }
+uuid = "1"
+futures = "0.3"
